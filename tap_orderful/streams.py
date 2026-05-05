@@ -1,6 +1,6 @@
 """Stream type classes for tap-orderful."""
 
-from typing import Iterable, Iterator, Optional
+from typing import Iterable, Optional
 
 from hotglue_singer_sdk import typing as th
 
@@ -84,11 +84,16 @@ class EdiMessageStream(OrderfulStream):
         """Use stream-level state to avoid one partition entry per transaction_id."""
         return self.stream_state
 
-    def get_records(self, context: Optional[dict]) -> Iterator[dict]:
-        """Skip the HTTP call entirely when the parent type does not match."""
+    def sync(self, context: Optional[dict] = None) -> None:
+        """Skip entirely when the parent transaction type does not match.
+
+        Returning before super().sync() prevents the SCHEMA message, log line,
+        and HTTP call that would otherwise fire for every non-matching parent record.
+        """
         if context and context.get("edi_type") != self.edi_type:
             return
-        yield from super().get_records(context)
+        super().sync(context=context)
+
 
     def parse_response(self, response) -> Iterable[dict]:
         """Yield one record: transaction_id + flattened transactionSets body."""
