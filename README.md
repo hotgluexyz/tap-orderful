@@ -46,12 +46,17 @@ The key is passed as a custom request header (`orderful-api-key`) on every API c
 
 ## Supported Streams
 
-| Stream                  | Replication Key  | Primary Key      | Description                                              |
-|-------------------------|------------------|------------------|----------------------------------------------------------|
-| `transactions`          | `lastUpdatedAt`  | `id`             | All EDI documents (850, 855, 856, 810, etc.) exchanged with trading partners. |
-| `transaction_messages`  | (full table)     | `transaction_id` | Parsed EDI body for each transaction, serialized as JSON in the `raw` field. |
-| `relationships`         | `updatedAt`      | `id`             | Trading partner relationships and the document types they cover. |
-| `organization`          | (full table)     | `id`             | Current user's organization details and EDI account ISA IDs. |
+| Stream               | Replication Key  | Primary Key      | Description                                                                    |
+|----------------------|------------------|------------------|--------------------------------------------------------------------------------|
+| `transactions`       | `lastUpdatedAt`  | `id`             | Metadata index for all EDI documents (850, 855, 856, 810, etc.) exchanged with trading partners. |
+| `purchase_orders`    | (full table)     | `transaction_id` | Parsed EDI 850 purchase order body for each matching transaction.              |
+| `po_acknowledgments` | (full table)     | `transaction_id` | Parsed EDI 855 PO acknowledgment body for each matching transaction.           |
+| `ship_notices`       | (full table)     | `transaction_id` | Parsed EDI 856 ship notice / ASN body for each matching transaction.           |
+| `invoices`           | (full table)     | `transaction_id` | Parsed EDI 810 invoice body for each matching transaction.                     |
+| `relationships`      | `updatedAt`      | `id`             | Trading partner relationships and the transaction types they cover.            |
+| `organization`       | (full table)     | `id`             | Current organization details and EDI account ISA IDs.                          |
+
+The EDI message streams (`purchase_orders`, `po_acknowledgments`, `ship_notices`, `invoices`) are child streams of `transactions`. For each transaction, the tap calls `GET /transactions/{id}/message` and emits a record only when the transaction's EDI type matches that stream (e.g. type `850` for `purchase_orders`).
 
 **Note on incremental sync:** The Orderful v3 API does not support server-side date filtering on the `transactions` or `relationships` endpoints. Incremental replication is applied client-side: the tap pages through all results and emits only records newer than the stored bookmark. Full-page fetches are expected on every run.
 
