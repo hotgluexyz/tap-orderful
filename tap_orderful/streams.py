@@ -17,7 +17,7 @@ class TransactionsStream(OrderfulStream):
         """Pass transaction_id and edi_type to typed child streams."""
         return {
             "transaction_id": record["id"],
-            "edi_type": record.get("type", {}).get("name", ""),
+            "edi_type": (record.get("type") or {}).get("name", ""),
         }
 
     _party_schema = th.ObjectType(
