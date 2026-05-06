@@ -49,6 +49,6 @@ class OrderfulStream(RESTStream):
             record_value = row.get(self.replication_key)
             if record_value:
                 start_time = self.get_starting_time(context)
-                if start_time and pendulum.parse(record_value) < start_time:
+                if start_time and pendulum.parse(record_value) <= start_time:
                     return None
         return row
